@@ -7,11 +7,6 @@ module QueryTrace
         alias_method :log_info, :log_info_with_trace
       end
     end
-    klass.class_eval %(
-      def row_even
-        @@row_even
-      end
-    )
   end
   
   def log_info_with_trace(sql, name, runtime)
@@ -26,21 +21,15 @@ module QueryTrace
   
   def format_trace(trace)
     if ActiveRecord::Base.colorize_logging
-      if row_even
-        message_color = "35;2"
-      else
-        message_color = "36;2"
-      end
-      trace.collect{|t| "    \e[#{message_color}m#{t}\e[0m"}.join("\n")
+      trace.collect{|t| "    \e[44;37m#{t}\e[0m\n\n"}.join("\n")
     else
       trace.join("\n    ")
     end
   end
   
-  VENDOR_RAILS_REGEXP = %r(([\\/:])vendor\1rails\1)
+  VENDOR_RAILS_REGEXP = %r(([\\/:])vendor\1(rails|rubygems|gems)\1)
   def clean_trace(trace)
     return trace unless defined?(RAILS_ROOT)
-    
-    trace.select{|t| /#{Regexp.escape(File.expand_path(RAILS_ROOT))}/ =~ t}.reject{|t| VENDOR_RAILS_REGEXP =~ t}.collect{|t| t.gsub(RAILS_ROOT + '/', '')}
+    trace.select{|t| /#{Regexp.escape(File.expand_path(RAILS_ROOT))}/ =~ t}.reject{|t| VENDOR_RAILS_REGEXP =~ t}.collect{|t| t.gsub(RAILS_ROOT + '/', '')}[0,1]
   end
 end
